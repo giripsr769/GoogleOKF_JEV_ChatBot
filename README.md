@@ -54,6 +54,46 @@ A normal answer takes about 3 to 7 seconds.
 | [`okf-chat-ui`](okf-chat-ui/README.md) | The chat window you type in. |
 | [`okf_jev_requirement.md`](okf_jev_requirement.md) | The original plan and design notes. |
 
+### Folder structure
+
+```
+OKF_JEV/
+├── README.md                      This page: what the project is and how to start it
+├── okf_jev_requirement.md         The detailed requirements and design notes
+├── .gitignore                     Tells Git which files to leave out (secret keys, big folders)
+├── docs/
+│   ├── flowchart.png              The flow chart shown above
+│   └── flowchart.mmd              The text the flow chart was drawn from
+│
+├── okf-sql-ai-service/            THE BRAIN: the backend that answers the questions
+│   ├── src/                       The program code, one file per step of the journey
+│   ├── okf_tables/                50 short files, each describing one database table
+│   ├── db/                        SQL files that build the practice database
+│   ├── scripts/                   One-command setup for running without Docker
+│   ├── tools/                     Creates the practice tables and their descriptions
+│   ├── tests/                     Automatic checks, plus the lists of test questions
+│   ├── vector_store/              The search index (the app builds it for you)
+│   ├── .env.example               Template for your settings and secret keys
+│   ├── Dockerfile                 Recipe for the backend's Docker container
+│   ├── docker-compose.yml         Starts the backend and the database together
+│   ├── requirements.txt           The list of Python packages it needs
+│   └── README.md                  The detailed backend guide
+│
+└── okf-chat-ui/                   THE CHAT WINDOW: what you see in your browser
+    ├── src/app/                   The chat window's code: chat, sidebar and history
+    ├── public/                    Small files such as the page icon
+    ├── package.json               The list of packages and the start commands
+    ├── angular.json, tsconfig*.json   Settings for the Angular tool
+    └── README.md                  The chat window guide
+```
+
+**Files that appear on your computer but are never uploaded to GitHub** (the `.gitignore` leaves them out on purpose):
+- `okf-sql-ai-service/.env`: your secret keys and settings. You create it from `.env.example`.
+- `okf-sql-ai-service/.venv/`: the Python packages for the no-Docker option.
+- `okf-chat-ui/node_modules/`: the chat window's packages, created by `npm install`.
+- `okf-sql-ai-service/vector_store/okf.faiss` and `okf.json`: the search index, built the first time the backend starts.
+- Test results (`tests/last_run*.json`) and temporary folders such as `dist/` and `__pycache__/`.
+
 ## What you need before you start
 
 1. **Two secret keys.** A key works like a password for an online service. You need one from each:
