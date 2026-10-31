@@ -1,0 +1,25 @@
+services:
+  api:
+    build: .
+    ports: ["8000:8000"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://okf_readonly:okf_readonly@db:5432/shop
+    volumes:
+      - ./okf_tables:/app/okf_tables
+      - ./tests:/app/tests
+      - ./vector_store:/app/vector_store
+    depends_on:
+      db: {condition: service_healthy}
+  db:
+    image: postgres:16
+    environment: {POSTGRES_PASSWORD: postgres, POSTGRES_DB: shop}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d shop"]
+      interval: 3s
+      retries: 20
+volumes:
+  pgdata:

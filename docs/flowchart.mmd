@@ -1,0 +1,21 @@
+flowchart TD
+    A(["You type a question<br/>in the chat window"]) --> B{"Safety guard:<br/>is it a real question<br/>about the data?"}
+    B -->|"No: a trick, a delete<br/>request or off-topic"| X(["Stopped.<br/>You get a polite no."])
+    B -->|"Yes"| C["Find the right tables<br/>50 tables are narrowed<br/>to the 2 or 3 that matter"]
+    C --> D["An AI writes the lookup<br/>one read-only SQL instruction"]
+    D --> E{"Safety inspection:<br/>read-only, approved tables,<br/>low risk?"}
+    E -->|"No"| Y(["Stopped.<br/>You are told it was held back."])
+    E -->|"Yes"| F["Run it with a read-only login<br/>3 second limit<br/>100 rows at most"]
+    F --> G{"Finished<br/>in time?"}
+    G -->|"No"| Z(["Stopped.<br/>You are asked to narrow the question."])
+    G -->|"Yes"| H["An AI writes the answer<br/>in plain English"]
+    H --> I(["You read the answer.<br/>A table only if you asked for one."])
+
+    classDef good fill:#dcfce7,stroke:#16a34a,color:#14532d
+    classDef stop fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+    classDef step fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
+    classDef check fill:#fef9c3,stroke:#ca8a04,color:#713f12
+    class A,I good
+    class X,Y,Z stop
+    class C,D,F,H step
+    class B,E,G check

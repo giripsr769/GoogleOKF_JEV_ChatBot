@@ -1,0 +1,33 @@
+# ---- Secrets: never commit real keys (commit .env.example instead) ----
+.env
+.env.*
+!.env.example
+
+# ---- Python ----
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Generated: FAISS index is rebuilt automatically from okf_tables/ ----
+okf-sql-ai-service/vector_store/*
+!okf-sql-ai-service/vector_store/.gitkeep
+
+# ---- Generated: evaluation output ----
+okf-sql-ai-service/tests/last_run*.json
+
+# ---- Angular / Node (okf-chat-ui also has its own .gitignore) ----
+node_modules/
+dist/
+.angular/
+
+# ---- Editors, OS, logs, local tool settings ----
+.idea/
+.vscode/
+.claude/settings.local.json
+*.log
+.DS_Store
+Thumbs.db

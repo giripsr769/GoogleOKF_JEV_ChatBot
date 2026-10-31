@@ -1,0 +1,112 @@
+<div class="chat">
+  <header>
+    <div class="head-left">
+      <button class="menu" (click)="store.toggleSidebar()" aria-label="Open sidebar">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+      <h1>{{ store.active()?.title ?? 'OKF Text-to-SQL' }}</h1>
+    </div>
+    <button class="status" (click)="checkHealth()" title="Re-check API health">
+      <span class="dot" [class.up]="apiUp() === true" [class.down]="apiUp() === false"></span>
+      @if (apiUp() === true) { API online · {{ tablesIndexed() }} tables }
+      @else if (apiUp() === false) { API offline }
+      @else { checking… }
+    </button>
+  </header>
+
+  <main #thread class="thread">
+    @if (store.messages().length === 0 && !showTyping()) {
+      <div class="empty">
+        <p>Ask a question about customers, products, orders or order items.</p>
+        <div class="chips">
+          @for (s of starters; track s) {
+            <button class="chip" (click)="send(s)">{{ s }}</button>
+          }
+        </div>
+      </div>
+    }
+
+    @for (m of store.messages(); track $index) {
+      @if (m.role === 'user') {
+        <div class="row user"><div class="bubble">{{ m.text }}</div></div>
+      } @else if (m.error) {
+        <div class="row bot">
+          <div class="bubble error">
+            <p class="err-text">{{ m.text }}</p>
+            @if (m.detail) { <p class="tech">{{ m.detail }}</p> }
+          </div>
+        </div>
+      } @else if (m.result; as r) {
+        <div class="row bot">
+          <div class="bubble result">
+            @if (r.answer) {
+              <p class="answer">{{ r.answer }}</p>
+            }
+
+            @if (store.showSql()) {
+              <div class="sql-head">
+                <span>SQL</span>
+                <button class="link" (click)="copy($index, m)">{{ m.copied ? 'Copied' : 'Copy' }}</button>
+              </div>
+              <pre class="sql">{{ r.sql }}</pre>
+            }
+
+            @if (r.show_table ?? true) {
+              @if (r.rows.length) {
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr>@for (c of r.columns; track c) { <th>{{ c }}</th> }</tr></thead>
+                    <tbody>
+                      @for (row of r.rows; track $index) {
+                        <tr>@for (c of r.columns; track c) { <td>{{ cell(row[c]) }}</td> }</tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              } @else {
+                <p class="muted">No rows returned.</p>
+              }
+            }
+
+            <div class="meta">
+              <button class="link" (click)="toggleTimings($index, m)">{{ m.showTimings ? 'hide details' : 'details' }}</button>
+              @if (m.showTimings) {
+                <span class="meta-text">
+                  {{ r.row_count }} row{{ r.row_count === 1 ? '' : 's' }}
+                  · tables: {{ r.tables_used.join(', ') }}
+                  · risk {{ r.risk_score }}
+                  · {{ totalMs(r) }} ms
+                </span>
+              }
+            </div>
+            @if (m.showTimings) {
+              <div class="timings">
+                @for (t of timingEntries(r); track t[0]) {
+                  <span>{{ t[0] }} <b>{{ t[1] }}</b> ms</span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+    }
+
+    @if (showTyping()) {
+      <div class="row bot"><div class="bubble typing"><i></i><i></i><i></i></div></div>
+    }
+  </main>
+
+  <form class="composer" (ngSubmit)="send()">
+    <input
+      name="q"
+      [(ngModel)]="input"
+      placeholder="Ask about your data…"
+      autocomplete="off"
+      maxlength="500"
+      [disabled]="loading()"
+    />
+    <button type="submit" [disabled]="loading() || !input.trim()">Send</button>
+  </form>
+</div>
