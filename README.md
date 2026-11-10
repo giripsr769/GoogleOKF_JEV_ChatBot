@@ -50,7 +50,7 @@ A normal answer takes about 3 to 7 seconds.
 
 | Folder | What it is |
 |---|---|
-| [`okf-sql-ai-service`](okf-sql-ai-service/README.md) | The "brain" behind the scenes. It does all the work above. |
+| [`okf-crewai-service`](okf-crewai-service/README.md) | The "brain" behind the scenes. It does all the work above, using CrewAI agents and a knowledge bundle in Google's OKF format. |
 | [`okf-chat-ui`](okf-chat-ui/README.md) | The chat window you type in. |
 | [`okf_jev_requirement.md`](okf_jev_requirement.md) | The original plan and design notes. |
 
@@ -65,19 +65,17 @@ OKF_JEV/
 │   ├── flowchart.png              The flow chart shown above
 │   └── flowchart.mmd              The text the flow chart was drawn from
 │
-├── okf-sql-ai-service/            THE BRAIN: the backend that answers the questions
-│   ├── src/                       The program code, one file per step of the journey
-│   ├── okf_tables/                50 short files, each describing one database table
+├── okf-crewai-service/            THE BRAIN: the backend that answers the questions
+│   ├── src/okf_chat/              The program code (API, guards, navigator, SQL checks, agents)
+│   ├── okf_bundle/                50 table descriptions in the Google OKF format
 │   ├── db/                        SQL files that build the practice database
-│   ├── scripts/                   One-command setup for running without Docker
-│   ├── tools/                     Creates the practice tables and their descriptions
+│   ├── tools/                     Live check scripts (they call the paid AI services)
 │   ├── tests/                     Automatic checks, plus the lists of test questions
-│   ├── vector_store/              The search index (the app builds it for you)
 │   ├── .env.example               Template for your settings and secret keys
-│   ├── Dockerfile                 Recipe for the backend's Docker container
-│   ├── docker-compose.yml         Starts the backend and the database together
-│   ├── requirements.txt           The list of Python packages it needs
-│   └── README.md                  The detailed backend guide
+│   ├── pyproject.toml             The list of Python packages it needs
+│   ├── Dockerfile, docker-compose.yml   Starts the service and the database
+│   ├── HANDOFF.md                 Where the work stopped, decisions made, known limits
+│   └── README.md                  The detailed guide for this service
 │
 └── okf-chat-ui/                   THE CHAT WINDOW: what you see in your browser
     ├── src/app/                   The chat window's code: chat, sidebar and history
@@ -88,11 +86,16 @@ OKF_JEV/
 ```
 
 **Files that appear on your computer but are never uploaded to GitHub** (the `.gitignore` leaves them out on purpose):
-- `okf-sql-ai-service/.env`: your secret keys and settings. You create it from `.env.example`.
-- `okf-sql-ai-service/.venv/`: the Python packages for the no-Docker option.
+- `okf-crewai-service/.env`: your secret keys and settings. You create it from `.env.example`.
+- `okf-crewai-service/.venv/`: the Python packages for the backend.
 - `okf-chat-ui/node_modules/`: the chat window's packages, created by `npm install`.
-- `okf-sql-ai-service/vector_store/okf.faiss` and `okf.json`: the search index, built the first time the backend starts.
 - Test results (`tests/last_run*.json`) and temporary folders such as `dist/` and `__pycache__/`.
+
+## How the knowledge about the tables is stored
+
+The backend learns what each table means from an **OKF bundle**. OKF is Google's [Open Knowledge Format](https://github.com/GoogleCloudPlatform/open-knowledge-format): a folder of plain Markdown files, one per table, each with a short YAML header. The files list the columns, keys, links to related tables and example questions.
+
+The bundle is built from the real database by one command (`okf-chat build`), so it cannot drift from the real tables. You can edit the descriptions by hand, and later rebuilds keep your edits. The bundled `okf_bundle/` conforms to OKF v0.2; check it any time with `okf-chat check`.
 
 ## What you need before you start
 
@@ -101,63 +104,57 @@ OKF_JEV/
    - an **OpenAI** key (for the AI that writes the SQL and the answers).
 
    Both services charge a small amount for each question you ask. Keep your keys private.
-2. **A way to run the database.** Pick one:
-   - **Docker Desktop** (easiest). It sets up the database for you.
-   - **Or** install **Python 3.11** and **PostgreSQL** yourself.
-3. **Node.js 20 or newer.** It is a free program that runs the chat window.
+2. **Docker Desktop.** It runs the practice database for you.
+3. **Python 3.10 to 3.13.** The backend is written in Python.
+4. **Node.js 20 or newer.** It is a free program that runs the chat window.
 
 You also need an internet connection.
 
-## Start it: Option A, with Docker (easiest)
+## Start it
 
 Open a terminal (Command Prompt, PowerShell or Terminal) inside this project folder.
 
-**Step 1.** Go to the backend folder:
+**Step 1.** Go to the backend folder and install it:
 ```
-cd okf-sql-ai-service
+cd okf-crewai-service
+python -m venv .venv
+.venv\Scripts\pip install -e ".[dev]"
 ```
+On Mac or Linux, use `.venv/bin/pip` instead.
 
 **Step 2.** Make your settings file.
 - Windows: `copy .env.example .env`
 - Mac or Linux: `cp .env.example .env`
 
-**Step 3.** Open the new `.env` file in any text editor. Replace `your-typesafe-key` and `your-openai-key` with your two keys. Save the file.
+**Step 3.** Open the new `.env` file in any text editor and put in your two keys (`TYPESAFE_API_KEY` and `OPENAI_API_KEY`). Save the file.
 
-**Step 4.** Start the backend:
+**Step 4.** Start the practice database. It runs in Docker on port 5433:
 ```
-docker compose up --build
+docker compose up -d db
 ```
-The first time takes a few minutes. Wait until you see `Application startup complete`. Leave this window open.
 
-**Step 5.** Open a **second** terminal and start the chat window:
+**Step 5.** Start the backend:
+```
+.venv\Scripts\okf-chat serve
+```
+On Mac or Linux, use `.venv/bin/okf-chat serve`. Wait until you see `Application startup complete`. Leave this window open. The backend now listens on **http://127.0.0.1:8001**.
+
+(You can also run the backend in Docker: `docker compose up -d --build`.)
+
+**Step 6.** Open a **second** terminal and start the chat window:
 ```
 cd okf-chat-ui
 npm install
 npm start
 ```
 
-**Step 6.** Open **http://localhost:4200** in your web browser. A **green dot** in the top-right corner means everything is ready. Type a question, for example: `Top 3 customers by total order value`.
+**Step 7.** Open **http://localhost:4200** in your web browser. A **green dot** in the top-right corner means everything is ready. Type a question, for example: `Top 3 customers by total order value`.
 
-**To stop:** press `Ctrl+C` in each terminal window. Then run `docker compose down` in the backend folder.
+**To stop:** press `Ctrl+C` in each terminal window. Then run `docker compose down` in `okf-crewai-service`.
 
-## Start it: Option B, without Docker
+The chat window's `apiUrl` (in `okf-chat-ui/src/app/environment.ts`) already points at port 8001. The full step-by-step guide, settings and troubleshooting are in the [backend guide](okf-crewai-service/README.md).
 
-You install Python and PostgreSQL yourself. After that, one command does the rest.
-
-1. Install **Python 3.11** and **PostgreSQL 13 or newer**. Remember the password you give PostgreSQL.
-2. In a terminal:
-   ```
-   cd okf-sql-ai-service
-   python scripts/setup_local.py --pg-password YOUR_POSTGRES_PASSWORD
-   ```
-   This builds everything and the practice database for you. On a Mac with Homebrew, also add `--pg-user YOUR_MAC_USERNAME`.
-3. Open the new `.env` file and add your two keys, as in Option A.
-4. Start the backend:
-   - Windows: `.venv\Scripts\python -m uvicorn src.main:app`
-   - Mac or Linux: `.venv/bin/python -m uvicorn src.main:app`
-5. Start the chat window and open it in your browser, as in Option A, steps 5 and 6.
-
-The full step-by-step guide, with install help for each system, is in the [backend guide](okf-sql-ai-service/README.md#run-without-docker).
+**Using your own database instead of the practice one?** See "Use it in another application" in the [backend guide](okf-crewai-service/README.md#use-it-in-another-application). The backend refuses to start if its database login can write, so give it a read-only login.
 
 ## Questions to try
 
@@ -176,11 +173,11 @@ The practice database is filled with made-up data. Odd names like "suppliers nam
 
 ## Good to know
 
-- **No memory.** Each question stands alone. The app does not remember your earlier messages, so "and last month?" will not work.
+- **Follow-ups work inside one chat.** Questions such as "show me in table view" or "and last month?" are understood. The backend remembers the last few messages for about 30 minutes, and forgets them when it restarts.
 - **Check important answers.** The AI can make mistakes. Switch on **Show SQL query** in the sidebar to see exactly how an answer was found.
 - **Your chats stay in your browser.** The chat history is saved only on your computer, not on a server. Use **Clear all history** on a shared computer.
 - **Some data goes to OpenAI.** To write the answer, the app sends the result of your question (at most 30 rows) to OpenAI. If you do not want that, set `NATURAL_ANSWERS=0` in the `.env` file. The app then shows a table instead of a sentence.
-- **It is practice data.** To use your own database, follow the "sample database" section in the [backend guide](okf-sql-ai-service/README.md#the-sample-database).
+- **It is practice data.** To use your own database, follow "Use it in another application" in the [backend guide](okf-crewai-service/README.md#use-it-in-another-application).
 
 ## Something not working?
 
@@ -190,7 +187,8 @@ The practice database is filled with made-up data. Odd names like "suppliers nam
 | "This is taking too long" | The AI services are slow right now. Wait a moment and try again. |
 | Every question gives an error | A key in `.env` is probably wrong or missing. Check both keys. |
 | `docker` is not recognised | Install Docker Desktop and make sure it is running. |
-| Something else | See the troubleshooting table in the [backend guide](okf-sql-ai-service/README.md#troubleshooting). |
+| "Service refuses to start" about the database login | `DATABASE_URL` in `.env` must be the read-only login (`okf_readonly`, port 5433), not an admin one. |
+| Something else | See the [backend guide](okf-crewai-service/README.md). |
 
 ## Keep your keys safe
 
@@ -199,4 +197,4 @@ The practice database is filled with made-up data. Odd names like "suppliers nam
 
 ## For developers
 
-Built with FastAPI (backend), Angular (chat window), PostgreSQL, FAISS for finding the right tables, TypeSafe Jev as the safety AI, OpenAI for SQL and answers, and sqlglot to check every query. The technical details are in the [backend guide](okf-sql-ai-service/README.md) and the [chat window guide](okf-chat-ui/README.md).
+Built with FastAPI (backend), Angular (chat window), PostgreSQL, a Google OKF v0.2 bundle as the knowledge layer, CrewAI agents with OpenAI for SQL and answers, TypeSafe Jev as the safety AI (it also scores which tables a question needs), and sqlglot to check every query. The technical details are in the [backend guide](okf-crewai-service/README.md) and the [chat window guide](okf-chat-ui/README.md).

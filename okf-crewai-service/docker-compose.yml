@@ -1,0 +1,33 @@
+# Postgres with the 50-table sample database. The api service is the chatbot (port 8001).
+# Host port 5433 (not 5432) so it does not clash with a PostgreSQL already installed on the host.
+services:
+  db:
+    image: postgres:16
+    ports: ["5433:5432"]
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: shop
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Files run in sorted order on first start: 01 creates the core tables and the okf_readonly role, 02 the rest.
+      - ./db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d shop"]
+      interval: 3s
+      retries: 20
+  api:
+    build: .
+    ports: ["8001:8001"]
+    env_file: .env
+    environment:
+      # inside the compose network the database is db:5432; always the read-only login
+      DATABASE_URL: postgresql://okf_readonly:okf_readonly@db:5432/shop
+      OKF_BUNDLE_DIR: /app/okf_bundle
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200}
+    volumes:
+      - ./okf_bundle:/app/okf_bundle:ro
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  pgdata:

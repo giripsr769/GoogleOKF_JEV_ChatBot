@@ -57,7 +57,7 @@
               @if (r.rows.length) {
                 <div class="table-wrap">
                   <table>
-                    <thead><tr>@for (c of r.columns; track c) { <th>{{ c }}</th> }</tr></thead>
+                    <thead><tr>@for (c of r.columns; track c) { <th>{{ label(c) }}</th> }</tr></thead>
                     <tbody>
                       @for (row of r.rows; track $index) {
                         <tr>@for (c of r.columns; track c) { <td>{{ cell(row[c]) }}</td> }</tr>

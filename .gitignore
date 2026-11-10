@@ -9,15 +9,12 @@ venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+*.egg-info/
 .mypy_cache/
 .ruff_cache/
 
-# ---- Generated: FAISS index is rebuilt automatically from okf_tables/ ----
-okf-sql-ai-service/vector_store/*
-!okf-sql-ai-service/vector_store/.gitkeep
-
-# ---- Generated: evaluation output ----
-okf-sql-ai-service/tests/last_run*.json
+# ---- Generated: cached Jev scores from tools/eval_navigator.py ----
+okf-crewai-service/tests/last_run*.json
 
 # ---- Angular / Node (okf-chat-ui also has its own .gitignore) ----
 node_modules/

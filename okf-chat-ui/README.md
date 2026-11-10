@@ -1,6 +1,6 @@
 # OKF Chat UI
 
-A small Angular chat window for the [`okf-sql-ai-service`](../okf-sql-ai-service/README.md) backend. You type a question in plain English and get a short, human reply. The generated SQL, the result table and the timings are available when you want them.
+A small Angular chat window for the [`okf-crewai-service`](../okf-crewai-service/README.md) backend. You type a question in plain English and get a short, human reply. The generated SQL, the result table and the timings are available when you want them.
 
 ## What you can do
 - **Chat in plain English.** Replies are sentences, not tables. A table appears only when your question asks for one ("... in a table", "as a grid", "tabulate ...").
@@ -9,10 +9,10 @@ A small Angular chat window for the [`okf-sql-ai-service`](../okf-sql-ai-service
 - **Friendly errors.** Blocked or failed requests come back as a normal sentence ("I can only look things up, so I can't change, add or delete any data."), with the technical detail in small print underneath.
 - **Never hangs.** If the backend does not answer within 40 seconds the UI stops waiting and says so.
 
-Each question is answered on its own: the backend has no memory of earlier messages, so a follow-up like "and last month?" will not know what "that" means.
+Follow-ups work inside one chat: the window sends its chat id with each question, so the backend can understand "show me in table view" or "and last month?". The backend only remembers the last few messages for about 30 minutes, and forgets them when it restarts.
 
 ## Run it
-You need **Node.js 20 or newer** (comes with npm), and the backend running on port 8000 (see the backend README).
+You need **Node.js 20 or newer** (comes with npm), and the backend running on port 8001 (see the backend README).
 
 ```
 cd okf-chat-ui
@@ -28,7 +28,7 @@ Everything lives in `src/app/environment.ts`:
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `apiUrl` | `http://localhost:8000` | where the backend is |
+| `apiUrl` | `http://localhost:8001` | where the backend is |
 | `requestTimeoutMs` | `40000` | how long the UI waits for one answer; keep it above the backend's `PIPELINE_TIMEOUT_S` (30 s) so the backend's own message normally arrives first |
 
 The backend only accepts browser requests from origins listed in its `CORS_ORIGINS` setting (default `http://localhost:4200`). If you serve the UI from another address or port, add it there.

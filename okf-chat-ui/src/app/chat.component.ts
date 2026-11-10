@@ -2,6 +2,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { AfterViewChecked, Component, ElementRef, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ChatStore, Message } from './chat-store.service';
+import { columnLabel } from './column-label';
+import { formatTimestamp } from './format-value';
 import { ChatService, QueryResponse } from './chat.service';
 import { environment } from './environment';
 
@@ -64,7 +66,7 @@ export class ChatComponent implements AfterViewChecked {
     const chatId = this.store.ensureChat(q);
     this.store.add(chatId, { role: 'user', text: q });
     this.loadingChat.set(chatId);
-    this.api.ask(q).subscribe({
+    this.api.ask(q, chatId).subscribe({
       next: (result) => {
         this.apiUp.set(true);
         this.loadingChat.set(null);
@@ -91,8 +93,15 @@ export class ChatComponent implements AfterViewChecked {
     if (chatId) this.store.patch(chatId, index, { showTimings: !m.showTimings });
   }
 
+  /** Human-readable table header for a column name (the rows are still looked up by the real name). */
+  label(column: string): string {
+    return columnLabel(column);
+  }
+
   cell(v: unknown): string {
-    return v === null || v === undefined ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v);
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'object') return JSON.stringify(v);
+    return (typeof v === 'string' ? formatTimestamp(v) : null) ?? String(v);
   }
 
   totalMs(r: QueryResponse): number {
@@ -121,7 +130,7 @@ export class ChatComponent implements AfterViewChecked {
       return { text: 'Something went wrong on my side. Please try again.', detail: String(e) };
     }
     if (e.status === 0) {
-      return { text: "I can't reach the service right now. Is the backend running on port 8000?" };
+      return { text: "I can't reach the service right now. Is the backend running on port 8001?" };
     }
     const d = e.error?.detail;
     const detail = typeof d === 'string' ? d : d ? JSON.stringify(d) : e.message;

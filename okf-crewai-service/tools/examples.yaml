@@ -1,0 +1,162 @@
+# Worked question/SQL pairs for the sample database, one list per table (salaries is sensitive: no examples).
+# `python tools/add_examples.py` checks every SQL (validator + read-only database) and writes them into okf_bundle as "# Examples".
+# Contact details (emails, street addresses) are never selected: the SQL judge refuses those.
+accounts:
+  - q: How many accounts are there of each type?
+    sql: SELECT type, COUNT(*) AS accounts FROM accounts GROUP BY type ORDER BY accounts DESC
+addresses:
+  - q: How many customers have a shipping address in each country?
+    sql: SELECT country, COUNT(DISTINCT customer_id) AS customers FROM addresses WHERE type = 'shipping' GROUP BY country ORDER BY customers DESC
+attendance:
+  - q: How many hours did each employee work in total?
+    sql: SELECT e.full_name, SUM(a.hours_worked) AS total_hours FROM attendance a JOIN employees e ON e.id = a.employee_id WHERE a.status <> 'absent' GROUP BY e.full_name ORDER BY total_hours DESC LIMIT 10
+bank_transactions:
+  - q: What is the total amount of bank transactions per account?
+    sql: SELECT ac.name, SUM(bt.amount) AS total_amount FROM bank_transactions bt JOIN accounts ac ON ac.id = bt.account_id GROUP BY ac.name ORDER BY total_amount DESC
+budgets:
+  - q: Which departments spent more than they planned in the latest fiscal year?
+    sql: SELECT d.name, b.planned_amount, b.spent_amount FROM budgets b JOIN departments d ON d.id = b.department_id WHERE b.fiscal_year = (SELECT MAX(fiscal_year) FROM budgets) AND b.spent_amount > b.planned_amount ORDER BY b.spent_amount - b.planned_amount DESC
+cart_items:
+  - q: Which products are in the most carts?
+    sql: SELECT p.name, COUNT(DISTINCT ci.cart_id) AS carts FROM cart_items ci JOIN products p ON p.id = ci.product_id GROUP BY p.name ORDER BY carts DESC LIMIT 10
+carts:
+  - q: How many carts were abandoned?
+    sql: SELECT COUNT(*) AS abandoned_carts FROM carts WHERE status = 'abandoned'
+categories:
+  - q: List the top-level categories.
+    sql: SELECT id, name FROM categories WHERE parent_id IS NULL ORDER BY name
+chat_sessions:
+  - q: What is the average chat session length, and how many were resolved?
+    sql: SELECT AVG(duration_minutes) AS avg_minutes, COUNT(*) FILTER (WHERE resolved) AS resolved_sessions, COUNT(*) AS sessions FROM chat_sessions
+coupons:
+  - q: Which coupons are valid today?
+    sql: SELECT code, discount_percent, valid_until FROM coupons WHERE CURRENT_DATE BETWEEN valid_from AND valid_until ORDER BY discount_percent DESC
+customer_feedback:
+  - q: What is the average feedback score per ticket category?
+    sql: SELECT tc.name, AVG(cf.score) AS avg_score, COUNT(*) AS responses FROM customer_feedback cf JOIN tickets t ON t.id = cf.ticket_id JOIN ticket_categories tc ON tc.id = t.category_id GROUP BY tc.name ORDER BY avg_score DESC
+customers:
+  - q: How many customers do we have in each country?
+    sql: SELECT country, COUNT(*) AS customers FROM customers GROUP BY country ORDER BY customers DESC
+  - q: Who are the top 3 customers by total order value?
+    sql: SELECT c.full_name, SUM(o.total_amount) AS total_value FROM customers c JOIN orders o ON o.customer_id = c.id WHERE o.status <> 'cancelled' GROUP BY c.id, c.full_name ORDER BY total_value DESC LIMIT 3
+departments:
+  - q: How many active employees are in each department?
+    sql: SELECT d.name, COUNT(*) AS employees FROM departments d JOIN employees e ON e.department_id = d.id WHERE e.status = 'active' GROUP BY d.name ORDER BY employees DESC
+employees:
+  - q: Who joined in the last year?
+    sql: SELECT full_name, hired_on FROM employees WHERE hired_on >= CURRENT_DATE - INTERVAL '1 year' ORDER BY hired_on DESC
+  - q: Who reports to each manager, and how many people do they manage?
+    sql: SELECT m.full_name AS manager, COUNT(*) AS direct_reports FROM employees e JOIN employees m ON m.id = e.manager_id GROUP BY m.id, m.full_name ORDER BY direct_reports DESC
+escalations:
+  - q: Which reasons cause the most ticket escalations?
+    sql: SELECT reason, COUNT(*) AS escalations FROM escalations GROUP BY reason ORDER BY escalations DESC LIMIT 10
+expenses:
+  - q: What is the total approved expense amount per category?
+    sql: SELECT category, SUM(amount) AS total FROM expenses WHERE status IN ('approved', 'reimbursed') GROUP BY category ORDER BY total DESC
+inventory:
+  - q: Which products are below their reorder level?
+    sql: SELECT p.name, w.name AS warehouse, i.quantity_on_hand, i.reorder_level FROM inventory i JOIN products p ON p.id = i.product_id JOIN warehouses w ON w.id = i.warehouse_id WHERE i.quantity_on_hand < i.reorder_level ORDER BY i.quantity_on_hand LIMIT 20
+invoice_items:
+  - q: Which products bring in the most invoiced revenue?
+    sql: SELECT p.name, SUM(ii.line_total) AS invoiced FROM invoice_items ii JOIN products p ON p.id = ii.product_id GROUP BY p.name ORDER BY invoiced DESC LIMIT 5
+invoices:
+  - q: How much is overdue in unpaid invoices?
+    sql: SELECT COUNT(*) AS overdue_invoices, SUM(amount) AS overdue_amount FROM invoices WHERE status = 'overdue'
+job_titles:
+  - q: Which job titles have the widest salary range?
+    sql: SELECT title, min_salary, max_salary, max_salary - min_salary AS spread FROM job_titles ORDER BY spread DESC LIMIT 5
+knowledge_articles:
+  - q: What are the 5 most viewed knowledge articles?
+    sql: SELECT title, views FROM knowledge_articles ORDER BY views DESC LIMIT 5
+leave_requests:
+  - q: How many pending leave requests are there by leave type?
+    sql: SELECT leave_type, COUNT(*) AS pending_requests FROM leave_requests WHERE status = 'pending' GROUP BY leave_type ORDER BY pending_requests DESC
+ledger_entries:
+  - q: What are total debits and credits per account?
+    sql: SELECT ac.name, SUM(le.debit) AS debits, SUM(le.credit) AS credits FROM ledger_entries le JOIN accounts ac ON ac.id = le.account_id GROUP BY ac.name ORDER BY ac.name
+order_coupons:
+  - q: How much discount did each coupon give in total?
+    sql: SELECT cp.code, SUM(oc.discount_amount) AS total_discount FROM order_coupons oc JOIN coupons cp ON cp.id = oc.coupon_id GROUP BY cp.code ORDER BY total_discount DESC
+order_items:
+  - q: Which products sold the most units?
+    sql: SELECT p.name, SUM(oi.quantity) AS units_sold FROM order_items oi JOIN orders o ON o.id = oi.order_id JOIN products p ON p.id = oi.product_id WHERE o.status <> 'cancelled' GROUP BY p.name ORDER BY units_sold DESC LIMIT 5
+orders:
+  - q: What was our revenue by month this year?
+    sql: SELECT DATE_TRUNC('month', ordered_at) AS month, SUM(total_amount) AS revenue FROM orders WHERE status <> 'cancelled' AND ordered_at >= DATE_TRUNC('year', CURRENT_DATE) GROUP BY month ORDER BY month
+  - q: How many orders are in each status?
+    sql: SELECT status, COUNT(*) AS orders FROM orders GROUP BY status ORDER BY orders DESC
+payments:
+  - q: How much was paid by each payment method?
+    sql: SELECT method, SUM(amount) AS total_paid, COUNT(*) AS payments FROM payments WHERE status = 'completed' GROUP BY method ORDER BY total_paid DESC
+performance_reviews:
+  - q: Which employees have the highest average performance rating?
+    sql: SELECT e.full_name, AVG(pr.rating) AS avg_rating FROM performance_reviews pr JOIN employees e ON e.id = pr.employee_id GROUP BY e.id, e.full_name ORDER BY avg_rating DESC LIMIT 5
+product_suppliers:
+  - q: Which supplier offers the lowest cost price for each product?
+    sql: SELECT DISTINCT ON (p.name) p.name AS product, s.name AS supplier, ps.cost_price FROM product_suppliers ps JOIN products p ON p.id = ps.product_id JOIN suppliers s ON s.id = ps.supplier_id ORDER BY p.name, ps.cost_price LIMIT 20
+products:
+  - q: What are the most expensive products in each category?
+    sql: SELECT DISTINCT ON (category) category, name, price FROM products ORDER BY category, price DESC
+  - q: Which products have fewer than 50 units in stock?
+    sql: SELECT name, category FROM products WHERE stock < 50 ORDER BY stock, name
+purchase_order_items:
+  - q: How many units have we ordered from suppliers per product?
+    sql: SELECT p.name, SUM(poi.quantity) AS units_ordered FROM purchase_order_items poi JOIN products p ON p.id = poi.product_id GROUP BY p.name ORDER BY units_ordered DESC LIMIT 10
+purchase_orders:
+  - q: What is the total cost of purchase orders per supplier?
+    sql: SELECT s.name, SUM(po.total_cost) AS total_cost FROM purchase_orders po JOIN suppliers s ON s.id = po.supplier_id WHERE po.status <> 'cancelled' GROUP BY s.name ORDER BY total_cost DESC
+returns:
+  - q: How much was refunded, by return reason?
+    sql: SELECT reason, COUNT(*) AS returns, SUM(refund_amount) AS refunded FROM returns WHERE status = 'refunded' GROUP BY reason ORDER BY refunded DESC
+reviews:
+  - q: Which products have the best average review rating?
+    sql: SELECT p.name, AVG(r.rating) AS avg_rating, COUNT(*) AS reviews FROM reviews r JOIN products p ON p.id = r.product_id GROUP BY p.id, p.name ORDER BY avg_rating DESC, reviews DESC LIMIT 5
+shipments:
+  - q: How many shipments does each carrier have by status?
+    sql: SELECT carrier, status, COUNT(*) AS shipments FROM shipments GROUP BY carrier, status ORDER BY carrier, status
+  - q: What is the average delivery time in days per carrier?
+    sql: SELECT carrier, AVG(EXTRACT(EPOCH FROM (delivered_at - shipped_at)) / 86400) AS avg_days FROM shipments WHERE delivered_at IS NOT NULL GROUP BY carrier ORDER BY avg_days
+sla_policies:
+  - q: What are the response and resolution targets for each priority?
+    sql: SELECT priority, first_response_hours, resolution_hours FROM sla_policies ORDER BY resolution_hours
+suppliers:
+  - q: Which suppliers have the best rating?
+    sql: SELECT name, country, rating FROM suppliers ORDER BY rating DESC LIMIT 5
+support_agents:
+  - q: How many tickets does each active support agent handle?
+    sql: SELECT sa.full_name, COUNT(t.id) AS tickets FROM support_agents sa LEFT JOIN tickets t ON t.agent_id = sa.id WHERE sa.active GROUP BY sa.id, sa.full_name ORDER BY tickets DESC LIMIT 10
+support_teams:
+  - q: How many agents are in each support team?
+    sql: SELECT st.name, st.tier, COUNT(sa.id) AS agents FROM support_teams st LEFT JOIN support_agents sa ON sa.team_id = st.id GROUP BY st.id, st.name, st.tier ORDER BY st.tier, st.name
+tax_rates:
+  - q: What are the tax rates by country?
+    sql: SELECT country, tax_name, rate_percent FROM tax_rates ORDER BY country
+ticket_categories:
+  - q: Which ticket categories get the most tickets?
+    sql: SELECT tc.name, COUNT(*) AS tickets FROM ticket_categories tc JOIN tickets t ON t.category_id = tc.id GROUP BY tc.name ORDER BY tickets DESC
+ticket_comments:
+  - q: Which tickets have the most comments?
+    sql: SELECT t.id, t.subject, COUNT(*) AS comments FROM ticket_comments c JOIN tickets t ON t.id = c.ticket_id GROUP BY t.id, t.subject ORDER BY comments DESC LIMIT 5
+tickets:
+  - q: How many open tickets are there by priority?
+    sql: SELECT priority, COUNT(*) AS open_tickets FROM tickets WHERE status IN ('open', 'pending') GROUP BY priority ORDER BY open_tickets DESC
+  - q: What is the average time to resolve a ticket, per priority?
+    sql: SELECT priority, AVG(EXTRACT(EPOCH FROM (resolved_at - created_at)) / 3600) AS avg_hours FROM tickets WHERE resolved_at IS NOT NULL GROUP BY priority ORDER BY avg_hours
+training_courses:
+  - q: Which training courses are the longest?
+    sql: SELECT title, duration_hours, provider FROM training_courses ORDER BY duration_hours DESC LIMIT 5
+training_enrollments:
+  - q: How many employees completed each course?
+    sql: SELECT tc.title, COUNT(*) AS completed FROM training_enrollments te JOIN training_courses tc ON tc.id = te.course_id WHERE te.status = 'completed' GROUP BY tc.title ORDER BY completed DESC
+vendor_bills:
+  - q: How much do we still owe vendors in open or overdue bills?
+    sql: SELECT v.name, SUM(vb.amount) AS owed FROM vendor_bills vb JOIN vendors v ON v.id = vb.vendor_id WHERE vb.status IN ('open', 'overdue') GROUP BY v.name ORDER BY owed DESC
+vendors:
+  - q: What are the payment terms for each vendor category?
+    sql: SELECT category, AVG(payment_terms_days) AS avg_terms_days, COUNT(*) AS vendors FROM vendors GROUP BY category ORDER BY category
+warehouses:
+  - q: How much stock does each warehouse hold?
+    sql: SELECT w.name, w.city, SUM(i.quantity_on_hand) AS units FROM warehouses w JOIN inventory i ON i.warehouse_id = w.id GROUP BY w.id, w.name, w.city ORDER BY units DESC
+wishlists:
+  - q: Which products are on the most wishlists?
+    sql: SELECT p.name, COUNT(*) AS wishlists FROM wishlists w JOIN products p ON p.id = w.product_id GROUP BY p.name ORDER BY wishlists DESC LIMIT 5

@@ -27,9 +27,10 @@ export interface Health {
 export class ChatService {
   private http = inject(HttpClient);
 
-  ask(question: string): Observable<QueryResponse> {
+  /** `sessionId` (the chat id) lets the backend understand follow-ups such as "show me in table view". */
+  ask(question: string, sessionId?: string): Observable<QueryResponse> {
     return this.http
-      .post<QueryResponse>(`${environment.apiUrl}/api/text-to-sql`, { question })
+      .post<QueryResponse>(`${environment.apiUrl}/api/text-to-sql`, { question, session_id: sessionId })
       .pipe(timeout(environment.requestTimeoutMs)); // unsubscribing on timeout also cancels the HTTP request
   }
 

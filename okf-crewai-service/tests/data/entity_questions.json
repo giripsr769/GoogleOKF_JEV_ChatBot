@@ -1,0 +1,14 @@
+[
+  {"q": "What is the average rating for Desk Lamp?", "tables": ["reviews", "products"], "domain": "ecommerce"},
+  {"q": "How many reviews does the Laptop have?", "tables": ["reviews", "products"], "domain": "ecommerce"},
+  {"q": "What is the average rating of Headphones?", "tables": ["reviews", "products"], "domain": "ecommerce"},
+  {"q": "Which customers reviewed the Desk Lamp?", "tables": ["customers", "reviews", "products"], "domain": "ecommerce"},
+  {"q": "How many units of SQL Cookbook have been sold?", "tables": ["order_items", "products"], "domain": "ecommerce"},
+  {"q": "Which suppliers supply the Laptop?", "tables": ["suppliers", "product_suppliers", "products"], "domain": "ecommerce"},
+  {"q": "How many Headphones are in each warehouse?", "tables": ["inventory", "products", "warehouses"], "domain": "ecommerce"},
+  {"q": "Show the orders placed by Asha Rao", "tables": ["orders", "customers"], "domain": "ecommerce"},
+  {"q": "How much has Ravi Kumar spent in total?", "tables": ["orders", "customers"], "domain": "ecommerce"},
+  {"q": "How many support tickets has Liam Smith raised?", "tables": ["tickets", "customers"], "domain": "support"},
+  {"q": "How many wishlists is the Desk Lamp on?", "tables": ["wishlists", "products"], "domain": "ecommerce"},
+  {"q": "Which carts contain the Laptop?", "tables": ["cart_items", "carts", "products"], "domain": "ecommerce"}
+]

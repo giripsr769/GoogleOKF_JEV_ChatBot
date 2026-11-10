@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "okf-chat"
+version = "0.1.0"
+description = "Chat with your Postgres data in plain English, driven by a Google OKF v0.2 knowledge bundle."
+requires-python = ">=3.10,<3.14"
+# Exact pins. Each is the last patch of an older, mature minor line (not the newest release).
+dependencies = [
+    "crewai==1.14.7",
+    "fastapi==0.115.14",
+    "uvicorn[standard]==0.34.3",
+    "typesafe-sdk==0.7.5",
+    "sqlglot==27.29.0",
+    "psycopg[binary]==3.2.13",
+    "pydantic-settings==2.10.1",
+    "pyyaml==6.0.2",
+    "python-dotenv==1.2.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.4.2",
+    "pytest-asyncio==1.2.0",
+    "httpx==0.28.1",
+]
+
+[project.scripts]
+okf-chat = "okf_chat.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

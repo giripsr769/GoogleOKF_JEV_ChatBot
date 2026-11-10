@@ -1,0 +1,19 @@
+# Groups the 50 sample tables into folders of the OKF bundle (sample database only).
+# Pass it with: okf-chat build --domains db/domains.yaml
+ecommerce:
+  title: E-commerce
+  tables: [customers, products, orders, order_items, categories, suppliers, product_suppliers, warehouses,
+           inventory, payments, shipments, returns, reviews, coupons, order_coupons, addresses, carts,
+           cart_items, wishlists, purchase_orders, purchase_order_items]
+hr:
+  title: Human resources
+  tables: [departments, job_titles, employees, salaries, leave_requests, attendance, performance_reviews,
+           training_courses, training_enrollments]
+finance:
+  title: Finance
+  tables: [accounts, ledger_entries, invoices, invoice_items, budgets, expenses, tax_rates, vendors,
+           vendor_bills, bank_transactions]
+support:
+  title: Customer support
+  tables: [support_teams, support_agents, ticket_categories, sla_policies, tickets, ticket_comments,
+           escalations, knowledge_articles, chat_sessions, customer_feedback]
